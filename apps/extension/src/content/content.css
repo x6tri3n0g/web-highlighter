@@ -1,7 +1,9 @@
-/* 색상 값은 mark 의 인라인 스타일로 지정하므로 여기에서는 모양만 다룬다. */
+/*
+ * 색상과 글자색은 mark 의 인라인 스타일로 지정한다.
+ * 사이트가 다크 모드 규칙으로 글자색을 덮어쓰는 것을 막기 위해서이다.
+ */
 mark[data-highlighter-id] {
   border-radius: 2px;
-  color: inherit;
   cursor: pointer;
   padding: 0 1px;
 }

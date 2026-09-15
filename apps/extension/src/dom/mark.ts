@@ -1,4 +1,8 @@
-import { HIGHLIGHT_COLOR_HEX, type HighlightColor } from '@highlighter/shared'
+import {
+  HIGHLIGHT_COLOR_HEX,
+  HIGHLIGHT_TEXT_COLOR,
+  type HighlightColor,
+} from '@highlighter/shared'
 
 export const MARK_ID_ATTRIBUTE = 'data-highlighter-id'
 export const MARK_COLOR_ATTRIBUTE = 'data-highlighter-color'
@@ -42,6 +46,8 @@ const sliceWithin = (node: Text, range: Range): { start: number; end: number } =
 const paint = (mark: HTMLElement, color: HighlightColor): void => {
   mark.setAttribute(MARK_COLOR_ATTRIBUTE, color)
   mark.style.backgroundColor = HIGHLIGHT_COLOR_HEX[color]
+  // 인라인으로 지정해야 사이트의 다크 모드 규칙보다 우선한다.
+  mark.style.color = HIGHLIGHT_TEXT_COLOR
 }
 
 const wrap = (node: Text, id: string, color: HighlightColor): HTMLElement => {

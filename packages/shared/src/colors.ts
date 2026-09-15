@@ -18,3 +18,10 @@ export const HIGHLIGHT_COLOR_LABEL: Record<HighlightColor, string> = {
   blue: '파랑',
   pink: '핑크',
 }
+
+/**
+ * 하이라이트 배경은 네 가지 모두 밝은 파스텔이므로, 글자색은 언제나 어두워야 한다.
+ * 페이지의 글자색을 물려받게 두면 다크 모드 사이트에서 밝은 글자가 밝은 배경 위에
+ * 놓여 읽을 수 없게 된다.
+ */
+export const HIGHLIGHT_TEXT_COLOR = '#1f2328'
