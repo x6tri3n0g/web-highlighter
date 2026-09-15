@@ -1,11 +1,19 @@
+import { HIGHLIGHT_COLOR_HEX } from '@highlighter/shared'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { applyMark, findMarks, overlapsMark, removeMark } from './mark'
+import { applyMark, findMarks, overlapsMark, removeMark, setMarkColor } from './mark'
 import { buildTextIndex, offsetsToRange } from './text-index'
 
 const render = (html: string): HTMLElement => {
   document.body.innerHTML = html
   return document.body
+}
+
+/** jsdom 은 style.backgroundColor 를 rgb() 형태로 돌려주므로 비교 전에 맞춰 준다. */
+const hexToRgb = (hex: string): string => {
+  const value = Number.parseInt(hex.slice(1), 16)
+
+  return `rgb(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255})`
 }
 
 const rangeFor = (root: HTMLElement, needle: string): Range => {
@@ -93,6 +101,61 @@ describe('overlapsMark', () => {
     const root = render('<p>문장을 줄이는 일은</p>')
 
     expect(overlapsMark(rangeFor(root, '줄이는'))).toBe(false)
+  })
+})
+
+describe('setMarkColor', () => {
+  it('눈에 보이는 배경색을 바꾼다', () => {
+    const root = render('<p>문장을 줄이는 일은</p>')
+    applyMark(rangeFor(root, '줄이는'), 'abc', 'yellow')
+
+    setMarkColor('abc', 'blue')
+
+    expect(root.querySelector('mark')!.style.backgroundColor).toBe(
+      hexToRgb(HIGHLIGHT_COLOR_HEX.blue),
+    )
+  })
+
+  it('색상 속성도 함께 바꾼다', () => {
+    const root = render('<p>문장을 줄이는 일은</p>')
+    applyMark(rangeFor(root, '줄이는'), 'abc', 'yellow')
+
+    setMarkColor('abc', 'pink')
+
+    expect(root.querySelector('mark')!.getAttribute('data-highlighter-color')).toBe('pink')
+  })
+
+  it('여러 조각으로 나뉜 하이라이트를 모두 바꾼다', () => {
+    const root = render('<p>문장을 <strong>줄이는</strong> 일은 <em>생각</em>을 줄인다</p>')
+    applyMark(rangeFor(root, '줄이는 일은 생각'), 'abc', 'yellow')
+
+    setMarkColor('abc', 'green')
+
+    const marks = [...root.querySelectorAll('mark')]
+
+    expect(marks.length).toBeGreaterThan(1)
+    for (const mark of marks) {
+      expect(mark.style.backgroundColor).toBe(hexToRgb(HIGHLIGHT_COLOR_HEX.green))
+      expect(mark.getAttribute('data-highlighter-color')).toBe('green')
+    }
+  })
+
+  it('다른 하이라이트는 건드리지 않는다', () => {
+    const root = render('<p>문장을 줄이는 일은 생각을 줄인다</p>')
+    applyMark(rangeFor(root, '줄이는'), 'keep', 'yellow')
+    applyMark(rangeFor(root, '생각을'), 'change', 'yellow')
+
+    setMarkColor('change', 'blue')
+
+    expect(findMarks('keep')[0]!.style.backgroundColor).toBe(
+      hexToRgb(HIGHLIGHT_COLOR_HEX.yellow),
+    )
+  })
+
+  it('없는 식별자를 바꿔도 오류가 나지 않는다', () => {
+    render('<p>본문</p>')
+
+    expect(() => setMarkColor('없음', 'blue')).not.toThrow()
   })
 })
 

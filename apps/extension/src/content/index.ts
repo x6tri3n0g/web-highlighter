@@ -4,12 +4,18 @@ import {
   MESSAGE_TYPE,
 } from '@highlighter/shared'
 
-import { findMarks, MARK_COLOR_ATTRIBUTE, MARK_ID_ATTRIBUTE, removeMark } from '../dom/mark'
+import {
+  findMarks,
+  MARK_COLOR_ATTRIBUTE,
+  MARK_ID_ATTRIBUTE,
+  removeMark,
+  setMarkColor,
+} from '../dom/mark'
 import { createHighlightStore } from '../storage/highlight-store'
 import { createSettingsStore } from '../storage/settings-store'
 import { captureSelection } from './capture'
 import { readPageContext } from './page'
-import { createPopover } from './popover'
+import { createPopover, POPOVER_HOST_ID } from './popover'
 import { restoreHighlights } from './restore'
 import './content.css'
 
@@ -28,23 +34,30 @@ const openPopoverFor = (id: string, color: HighlightColor, rect: DOMRect | null)
 
   popover.show(rect, color, {
     onSelectColor: async (picked) => {
-      const marks = findMarks(id)
+      setMarkColor(id, picked)
 
-      for (const mark of marks) {
-        mark.setAttribute(MARK_COLOR_ATTRIBUTE, picked)
+      // 색을 바꾼 뒤에도 팝오버를 열어 두어 다른 색과 비교할 수 있게 한다.
+      // 위치는 그대로 두어야 눌렀던 자리에서 버튼이 움직이지 않는다.
+      openPopoverFor(id, picked, rect)
+
+      try {
+        await Promise.all([
+          highlightStore.updateColor(page.url, id, picked),
+          settingsStore.setLastUsedColor(picked),
+        ])
+      } catch (error) {
+        console.warn('바뀐 색을 저장하지 못했습니다.', error)
       }
-
-      await Promise.all([
-        highlightStore.updateColor(page.url, id, picked),
-        settingsStore.setLastUsedColor(picked),
-      ])
-
-      popover.hide()
     },
     onRemove: async () => {
       removeMark(id)
-      await highlightStore.remove(page.url, id)
       popover.hide()
+
+      try {
+        await highlightStore.remove(page.url, id)
+      } catch (error) {
+        console.warn('하이라이트를 지우지 못했습니다.', error)
+      }
     },
   })
 }
@@ -94,6 +107,11 @@ document.addEventListener('click', (event) => {
   const target = event.target
 
   if (!(target instanceof Element)) {
+    return
+  }
+
+  // 팝오버 안의 클릭은 Shadow DOM 바깥에서 호스트 엘리먼트로 보이므로 여기에서 걸러낸다.
+  if (target.closest(`#${POPOVER_HOST_ID}`)) {
     return
   }
 

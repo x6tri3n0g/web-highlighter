@@ -6,7 +6,7 @@ import {
 
 import { POPOVER_STYLES } from './styles'
 
-const HOST_ELEMENT_ID = 'web-highlighter-popover-root'
+export const POPOVER_HOST_ID = 'web-highlighter-popover-root'
 const POPOVER_GAP = 8
 const POPOVER_ESTIMATED_HEIGHT = 36
 
@@ -22,7 +22,7 @@ interface PopoverController {
 
 const createShadowRoot = (): ShadowRoot => {
   const host = document.createElement('div')
-  host.id = HOST_ELEMENT_ID
+  host.id = POPOVER_HOST_ID
   document.body.appendChild(host)
 
   const shadow = host.attachShadow({ mode: 'open' })

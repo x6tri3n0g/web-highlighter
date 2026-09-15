@@ -35,11 +35,19 @@ const sliceWithin = (node: Text, range: Range): { start: number; end: number } =
   end: node === range.endContainer ? range.endOffset : node.data.length,
 })
 
+/**
+ * 눈에 보이는 색은 인라인 배경색이 결정하고, 속성은 지금 색이 무엇인지 알려 준다.
+ * 둘이 어긋나면 저장된 색과 보이는 색이 달라지므로 언제나 함께 바꾼다.
+ */
+const paint = (mark: HTMLElement, color: HighlightColor): void => {
+  mark.setAttribute(MARK_COLOR_ATTRIBUTE, color)
+  mark.style.backgroundColor = HIGHLIGHT_COLOR_HEX[color]
+}
+
 const wrap = (node: Text, id: string, color: HighlightColor): HTMLElement => {
   const mark = document.createElement('mark')
   mark.setAttribute(MARK_ID_ATTRIBUTE, id)
-  mark.setAttribute(MARK_COLOR_ATTRIBUTE, color)
-  mark.style.backgroundColor = HIGHLIGHT_COLOR_HEX[color]
+  paint(mark, color)
 
   node.parentNode?.insertBefore(mark, node)
   mark.appendChild(node)
@@ -83,6 +91,13 @@ export function findMarks(id: string): HTMLElement[] {
   return [
     ...document.querySelectorAll<HTMLElement>(`mark[${MARK_ID_ATTRIBUTE}="${CSS.escape(id)}"]`),
   ]
+}
+
+/** 하이라이트의 색을 바꾼다. 여러 조각으로 나뉘어 있으면 모두 바꾼다. */
+export function setMarkColor(id: string, color: HighlightColor): void {
+  for (const mark of findMarks(id)) {
+    paint(mark, color)
+  }
 }
 
 /** mark 를 풀어 원래 텍스트로 되돌린다. */
