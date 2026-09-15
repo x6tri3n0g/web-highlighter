@@ -13,7 +13,8 @@
     "dev:web": "pnpm --filter @highlighter/web dev",
     "build": "pnpm -r --if-present build",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "test:db": "./supabase/tests/run.sh"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
