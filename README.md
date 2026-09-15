@@ -20,12 +20,17 @@ pnpm dev:extension   # apps/extension/dist 를 크롬에 "압축해제된 확장
 pnpm dev:web         # http://localhost:3000
 ```
 
+개발 빌드는 `apps/extension/dist`, 배포용 빌드는 `apps/extension/release` 에 만들어집니다.
+두 빌드는 결과물이 다르므로 폴더를 나누어 두었습니다. 개발 중에 `pnpm build` 를 돌려도
+크롬에 불러온 폴더는 건드려지지 않습니다.
+
 ## 검증 명령
 
 ```bash
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm test:db     # Docker 로 Postgres 를 띄워 RLS 정책을 검증한다
 ```
 
 ## 단축키
