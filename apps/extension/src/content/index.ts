@@ -16,7 +16,7 @@ import { createSettingsStore } from '../storage/settings-store'
 import { captureSelection } from './capture'
 import { readPageContext } from './page'
 import { createPopover, POPOVER_HOST_ID } from './popover'
-import { restoreHighlights } from './restore'
+import { createRestoreScheduler } from './restore-scheduler'
 import './content.css'
 
 const highlightStore = createHighlightStore()
@@ -50,14 +50,18 @@ const openPopoverFor = (id: string, color: HighlightColor, rect: DOMRect | null)
       }
     },
     onRemove: async () => {
-      removeMark(id)
       popover.hide()
 
       try {
+        // 저장소에서 먼저 지운다. 화면을 먼저 지우면 그 사이에 복원 관찰기가
+        // 아직 남아 있는 저장 기록을 보고 다시 칠할 수 있다.
         await highlightStore.remove(page.url, id)
       } catch (error) {
         console.warn('하이라이트를 지우지 못했습니다.', error)
+        return
       }
+
+      removeMark(id)
     },
   })
 }
@@ -136,20 +140,42 @@ document.addEventListener('keydown', (event) => {
   }
 })
 
-const restoreOnLoad = async (): Promise<void> => {
-  if (!page || (await settingsStore.isHostDisabled(page.host))) {
+const LOG_PREFIX = '[Highlighter]'
+
+const scheduler = createRestoreScheduler({
+  loadHighlights: async () => {
+    if (!page) {
+      return []
+    }
+
+    const highlights = await highlightStore.listByUrl(page.url)
+
+    console.info(`${LOG_PREFIX} ${page.url} 에 저장된 하이라이트 ${highlights.length}개`)
+
+    return highlights
+  },
+  onRestored: (restored, failed) => {
+    console.info(`${LOG_PREFIX} 복원 ${restored}개, 본문에서 찾지 못함 ${failed}개`)
+  },
+})
+
+const startRestoring = async (): Promise<void> => {
+  if (!page) {
+    console.info(`${LOG_PREFIX} 다룰 수 없는 주소이므로 동작하지 않습니다.`)
     return
   }
 
   try {
-    const report = restoreHighlights(await highlightStore.listByUrl(page.url))
-
-    if (report.failed > 0) {
-      console.info(`하이라이트 ${report.failed}개는 본문에서 찾지 못했습니다.`)
+    if (await settingsStore.isHostDisabled(page.host)) {
+      return
     }
   } catch (error) {
-    console.warn('하이라이트를 복원하지 못했습니다.', error)
+    console.warn(`${LOG_PREFIX} 설정을 읽지 못했습니다.`, error)
   }
+
+  await scheduler.runNow()
+  // 사이트가 나중에 본문을 다시 그려도 하이라이트가 살아남도록 계속 지켜본다.
+  scheduler.start()
 }
 
-void restoreOnLoad()
+void startRestoring()
