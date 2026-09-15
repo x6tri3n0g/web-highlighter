@@ -1,6 +1,5 @@
-/* 하이라이트 마크업의 기본 모양. 색상 값은 mark 의 인라인 스타일로 지정한다. */
+/* 색상 값은 mark 의 인라인 스타일로 지정하므로 여기에서는 모양만 다룬다. */
 mark[data-highlighter-id] {
-  background-color: transparent;
   border-radius: 2px;
   color: inherit;
   cursor: pointer;
