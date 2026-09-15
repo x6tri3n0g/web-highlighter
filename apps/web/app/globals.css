@@ -1,0 +1,51 @@
+:root {
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard', sans-serif;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.shell {
+  margin: 0 auto;
+  max-width: 720px;
+  padding: 64px 24px;
+}
+
+.shell__title {
+  font-size: 24px;
+  margin: 0 0 8px;
+}
+
+.shell__description {
+  margin: 0 0 32px;
+  opacity: 0.7;
+}
+
+.shell__colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.shell__color {
+  align-items: center;
+  display: flex;
+  font-size: 14px;
+  gap: 8px;
+}
+
+.shell__swatch {
+  border-radius: 50%;
+  height: 16px;
+  width: 16px;
+}
