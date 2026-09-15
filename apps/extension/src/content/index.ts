@@ -25,6 +25,8 @@ const popover = createPopover()
 
 const page = readPageContext()
 
+const LOG_PREFIX = '[Highlighter]'
+
 const rectOf = (id: string): DOMRect | null => findMarks(id)[0]?.getBoundingClientRect() ?? null
 
 const openPopoverFor = (id: string, color: HighlightColor, rect: DOMRect | null): void => {
@@ -66,19 +68,42 @@ const openPopoverFor = (id: string, color: HighlightColor, rect: DOMRect | null)
   })
 }
 
+/** 하이라이트가 만들어지지 않았을 때 사용자가 무엇을 해야 하는지 알려 준다. */
+const CAPTURE_REASON: Record<string, string> = {
+  empty: '고른 문장이 없습니다. 문장을 드래그한 뒤 다시 눌러 보세요.',
+  overlapping: '이미 하이라이트된 부분과 겹칩니다.',
+  unresolvable: '본문으로 다룰 수 없는 영역입니다. 입력 상자 안의 글자일 수 있습니다.',
+}
+
 const highlightCurrentSelection = async (requested?: HighlightColor): Promise<void> => {
-  if (!page || (await settingsStore.isHostDisabled(page.host))) {
+  if (!page) {
+    console.warn(`${LOG_PREFIX} 다룰 수 없는 주소이므로 하이라이트하지 않습니다.`)
     return
   }
 
-  const color = requested ?? (await settingsStore.read()).lastUsedColor
-  const result = await captureSelection(page, color, highlightStore)
-
-  if (result.status !== 'created') {
-    return
+  try {
+    if (await settingsStore.isHostDisabled(page.host)) {
+      console.info(`${LOG_PREFIX} ${page.host} 에서는 꺼 두었습니다.`)
+      return
+    }
+  } catch (error) {
+    console.warn(`${LOG_PREFIX} 설정을 읽지 못했습니다.`, error)
   }
 
-  openPopoverFor(result.highlight.id, color, rectOf(result.highlight.id))
+  try {
+    const color = requested ?? (await settingsStore.read()).lastUsedColor
+    const result = await captureSelection(page, color, highlightStore)
+
+    if (result.status !== 'created') {
+      console.info(`${LOG_PREFIX} ${CAPTURE_REASON[result.status] ?? result.status}`)
+      return
+    }
+
+    console.info(`${LOG_PREFIX} 하이라이트를 저장했습니다: "${result.highlight.text}"`)
+    openPopoverFor(result.highlight.id, color, rectOf(result.highlight.id))
+  } catch (error) {
+    console.error(`${LOG_PREFIX} 하이라이트를 만들지 못했습니다.`, error)
+  }
 }
 
 const scrollToHighlight = (id: string): void => {
@@ -89,7 +114,7 @@ chrome.runtime.onMessage.addListener((rawMessage) => {
   const parsed = extensionMessageSchema.safeParse(rawMessage)
 
   if (!parsed.success) {
-    console.warn('알 수 없는 형식의 메시지를 받았습니다.', parsed.error)
+    console.warn(`${LOG_PREFIX} 알 수 없는 형식의 메시지를 받았습니다.`, parsed.error)
     return
   }
 
@@ -139,8 +164,6 @@ document.addEventListener('keydown', (event) => {
     popover.hide()
   }
 })
-
-const LOG_PREFIX = '[Highlighter]'
 
 const scheduler = createRestoreScheduler({
   loadHighlights: async () => {
